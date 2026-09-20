@@ -1,0 +1,17 @@
+# Motor de grafos — ver DEC-008
+# Arranque:  docker compose up -d
+# Navegador: http://localhost:3000   (FalkorDB Browser)
+# Bolt/Redis: localhost:6379
+services:
+  falkordb:
+    image: falkordb/falkordb:latest
+    container_name: acm-falkordb
+    # Enlazados a 127.0.0.1 a proposito: FalkorDB no pide autenticacion por
+    # defecto. Con "6379:6379" Docker publica en todas las interfaces y la base
+    # de datos queda accesible desde la red local.
+    ports:
+      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./falkordb_data:/data
+    restart: unless-stopped

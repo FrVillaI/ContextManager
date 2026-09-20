@@ -1,0 +1,8 @@
+# AI Context Manager Local — Python 3.13 (ver DEC-006)
+graphiti-core[falkordb]==0.29.3
+falkordb==1.7.1
+pydantic==2.13.4
+
+# graphiti-core 0.29.3 importa httpx pero no lo declara como dependencia,
+# y openai 3.3.1 ya migro a httpx2. Hay que fijarlo a mano.
+httpx==0.28.1

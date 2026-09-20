@@ -1,0 +1,15 @@
+{
+  "context_manager_version": "1.0",
+  "projects": {
+    "mi-proyecto": {
+      "project_id": "mi-proyecto",
+      "name": "MiProyecto",
+      "repository": "C:\ruta\a\tu\repositorio",
+      "memory_namespace": "mi-proyecto",
+      "context_manager_version": "1.0",
+      "stack": ["TypeScript", "Docker"],
+      "directories": ["src", "tests"],
+      "created_at": "2026-01-01"
+    }
+  }
+}

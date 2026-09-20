@@ -1,0 +1,37 @@
+# Entorno
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Datos locales del motor de grafos (contenedor)
+falkordb_data/
+
+# Resultados de benchmark: se regeneran ejecutando los scripts de tests/
+bench_results/
+
+# MEMORIA DE PROYECTOS REALES.
+# La memoria es la fuente de verdad (DEC-002) y se versiona en git, pero en el
+# repositorio de TU instalacion, no en el del Context Manager: contiene mensajes
+# de commit, rutas y decisiones de arquitectura de tus proyectos privados.
+# Para probar el sistema sin datos reales: python tools/seed_demo.py
+memory/
+
+# Registro de proyectos: contiene rutas absolutas de la maquina.
+# Se crea solo al ejecutar 'context_manager.py init'.
+projects.json
+
+# Sembrador y bancos del corpus privado: contienen rutas de archivo, nombres de
+# scripts y restricciones concretas de un proyecto real. Es la misma informacion
+# que memory/, en forma de script.
+tests/seed_piloto.py
+
+# Bancos de evaluacion atados al corpus privado: sus consultas y los
+# identificadores esperados describen el dominio del proyecto piloto.
+tests/evalset_piloto.py
+tests/eval_piloto.py
+tests/test_retrieval_piloto.py
+
+# Notas de diseno en bruto: conversaciones de trabajo con referencias al
+# proyecto piloto.
+docs/notas/

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/registry/main/schema.json",
+  "servers": {
+    "context-manager": {
+      "type": "stdio",
+      "command": "/ruta/absoluta/a/ContextManager/integrations/run-context-mcp.sh",
+      "args": [],
+      "env": {
+        "CONTEXT_MANAGER_WORKSPACE": "${workspaceFolder}"
+      }
+    }
+  }
+}

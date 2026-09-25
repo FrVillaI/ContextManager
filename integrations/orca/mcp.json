@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "context-manager": {
+      "command": "/ruta/absoluta/a/ContextManager/integrations/run-context-mcp.sh",
+      "args": [],
+      "env": {
+        "CONTEXT_MANAGER_PROJECT": "mi-proyecto"
+      }
+    }
+  }
+}

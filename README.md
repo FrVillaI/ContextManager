@@ -256,6 +256,30 @@ campo, sesiones cerradas sin justificación y estado del hook.
 
 ---
 
+## Integración con tu IDE (VS Code, Antigravity, Orca)
+
+En lugar de ejecutar `ask.py` y pegar el bloque a mano, puedes exponer el Context
+Manager como **servidor MCP** para que el agente de tu editor pida el contexto por
+sí mismo antes de tocar el código. Un solo servidor cubre **Visual Studio Code**,
+**Google Antigravity** y **Orca** ([tryorca.com](https://tryorca.com/)) —y cualquier
+otro cliente MCP— porque los tres hablan el mismo protocolo.
+
+```bash
+# 1. registra el repo (crea .context/project.json, que el servidor lee)
+python context_manager.py init /ruta/a/tu/repo --name MiProyecto
+# 2. apunta la config MCP del IDE al lanzador integrations/run-context-mcp.(sh|cmd)
+```
+
+El agente gana la herramienta `pedir_contexto` (y `buscar_memoria`,
+`detalle_registro`, `listar_proyectos`, `estado_proyecto`). El servidor **solo
+lee** la memoria: promocionar sigue siendo un paso humano por CLI. No añade
+dependencias —usa solo la biblioteca estándar— y degrada a léxico si Ollama no
+está.
+
+Instrucciones completas por IDE en [`integrations/README.md`](integrations/README.md).
+
+---
+
 ## Estructura
 
 ```
@@ -277,6 +301,11 @@ campo, sesiones cerradas sin justificación y estado del hook.
 │   ├── transcripts.py      lectura de transcripciones de agentes CLI
 │   ├── projects.py         registro y aislamiento multiproyecto
 │   └── hooks.py            hook post-commit
+├── integrations/           servidor MCP para IDE (VS Code, Antigravity, Orca)
+│   ├── mcp_server.py       servidor MCP stdio, solo biblioteca estándar
+│   ├── run-context-mcp.sh  lanzador Linux/macOS
+│   ├── run-context-mcp.cmd lanzador Windows
+│   └── vscode/ antigravity/ orca/   plantillas de configuración por IDE
 ├── tests/                  banco de evaluación y comparación de estrategias
 │   ├── evalset.py          19 consultas anotadas sobre el proyecto de ejemplo
 │   └── compare_retrieval.py  léxico vs semántico vs híbrido

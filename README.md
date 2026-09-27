@@ -280,6 +280,48 @@ Instrucciones completas por IDE en [`integrations/README.md`](integrations/READM
 
 ---
 
+---
+
+## Consumo de recursos
+
+La IA local son dos piezas con relación coste-beneficio **opuesta**:
+
+| Pieza | Coste | Beneficio medido |
+|---|---|---|
+| `llama3.2:3b` (intención) | 4–10 s por consulta, ~2 GB residentes | solo reordena candidatos |
+| `nomic-embed-text` | ~0,3 s, ~300 MB | recall de sinónimos ×2, nDCG ×3,6 |
+
+El modelo caro es el que menos aporta, así que en vez de un interruptor hay **tres modos**:
+
+```bash
+python context_manager.py ia estado
+```
+
+| Modo | Qué usa | Cuándo |
+|---|---|---|
+| `completo` | intención + embeddings | cuando no importa esperar |
+| **`ahorro`** | solo embeddings | **por defecto**: conserva casi toda la calidad sin los 2 GB |
+| `minimo` | solo léxico | sin Ollama en absoluto |
+
+```bash
+python context_manager.py ia ahorro
+```
+
+El modo es global, con anulación por proyecto (`--project`), y lo respetan `ask.py` y el servidor MCP
+por igual. Eso último importa: **el IDE lanza el servidor MCP y no puede pasarle banderas**, así que
+sin un ajuste persistente la integración intentaría siempre usar el modelo generativo.
+
+Para recuperar la memoria que Ollama retiene tras la última llamada:
+
+```bash
+python context_manager.py ia descargar
+```
+
+> **El mayor ahorro no está aquí.** Ningún comando del flujo diario usa el grafo: `ask.py`, `learn.py`,
+> `context_manager.py` y el servidor MCP leen JSONL y el índice vectorial directamente. Si no vas a
+> ejecutar `tests/smoke_stack.py`, apaga Docker con `docker compose down` y recuperas los ~4 GB que
+> WSL2 reserva.
+
 ## Estructura
 
 ```

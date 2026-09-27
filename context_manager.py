@@ -230,6 +230,78 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ia(args: argparse.Namespace) -> int:
+    """Enciende, apaga o consulta la IA local (DEC-032)."""
+    from acm.settings import (
+        MODOS, clear_project_mode, forget_health, loaded_models,
+        ollama_disponible, resolve, set_mode, unload_models,
+    )
+
+    if args.accion == "descargar":
+        # Dejar de llamar al modelo no lo baja: Ollama lo mantiene cargado unos
+        # minutos. Para recuperar la RAM hay que pedirlo.
+        cargados = loaded_models()
+        if not cargados:
+            print("Ollama no tiene ningun modelo cargado.")
+            return 0
+        nombres = [m.get("name") or m.get("model", "?") for m in cargados]
+        for m in cargados:
+            mb = round(m.get("size_vram", m.get("size", 0)) / 1024 / 1024)
+            print(f"  descargando {m.get('name', '?')}  ({mb} MB)")
+        for nombre, ok in unload_models(nombres):
+            print(f"  {'liberado' if ok else 'NO se pudo liberar'}  {nombre}")
+        return 0
+
+    if args.accion == "estado":
+        efectivo = resolve(ROOT, args.project)
+        print(f"modo efectivo{f' para {args.project}' if args.project else ''}: "
+              f"{efectivo.describe()}")
+        print(f"  {efectivo.descripcion}")
+        print()
+        disponible = ollama_disponible(ROOT, usar_cache=False)
+        print(f"Ollama: {'responde' if disponible else 'NO responde'}")
+        if disponible:
+            cargados = loaded_models()
+            if cargados:
+                for m in cargados:
+                    mb = round(m.get("size_vram", m.get("size", 0)) / 1024 / 1024)
+                    print(f"  cargado: {m.get('name','?')}  {mb} MB")
+            else:
+                print("  sin modelos cargados en memoria")
+        elif efectivo.usa_intencion or efectivo.usa_embeddings:
+            print("  las consultas caeran a solapamiento lexico hasta que arranque")
+        print()
+        print("Modos disponibles:")
+        for nombre, m in MODOS.items():
+            marca = "->" if nombre == efectivo.nombre else "  "
+            print(f"  {marca} {nombre:<9} {m.descripcion}")
+        return 0
+
+    if args.accion == "reiniciar":
+        if not args.project:
+            print("indica --project: 'reiniciar' quita la anulacion de un proyecto",
+                  file=sys.stderr)
+            return 1
+        quitado = clear_project_mode(ROOT, args.project)
+        print(f"{args.project}: {'anulacion retirada, vuelve al modo global' if quitado else 'no tenia anulacion propia'}")
+        return 0
+
+    # establecer un modo
+    try:
+        modo = set_mode(ROOT, args.accion, args.project)
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    forget_health(ROOT)
+    ambito = f"para {args.project}" if args.project else "globalmente"
+    print(f"modo {modo.nombre} {ambito}: {modo.descripcion}")
+    if not modo.usa_intencion and not modo.usa_embeddings:
+        print()
+        print("Ollama ya no hace falta. Para recuperar su memoria ahora:")
+        print("  python context_manager.py ia descargar")
+    return 0
+
+
 def cmd_hook(args: argparse.Namespace) -> int:
     """Gestiona el hook post-commit de un proyecto (DEC-027)."""
     from acm import hooks
@@ -493,6 +565,13 @@ def main() -> int:
     stt = sub.add_parser("status", help="salud del ciclo de memoria")
     stt.add_argument("--project", required=True)
     stt.set_defaults(func=cmd_status)
+
+    ia = sub.add_parser("ia", help="enciende, apaga o consulta la IA local")
+    ia.add_argument("accion",
+                    choices=["completo", "ahorro", "minimo",
+                             "estado", "descargar", "reiniciar"])
+    ia.add_argument("--project", help="aplica solo a este proyecto")
+    ia.set_defaults(func=cmd_ia)
 
     h = sub.add_parser("hook", help="hook post-commit del proyecto")
     h.add_argument("accion", choices=["install", "uninstall", "status"])

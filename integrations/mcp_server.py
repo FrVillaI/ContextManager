@@ -143,8 +143,6 @@ def tool_pedir_contexto(args: dict) -> str:
         raise ToolError("Falta 'query': describe en lenguaje natural lo que vas a hacer.")
 
     limit = int(args.get("limit", 8) or 8)
-    solo_lexico = bool(args.get("solo_lexico", False))
-    usar_modelo = bool(args.get("usar_modelo", True))
 
     pid = resolve_project(acm, args.get("project"))
     store = acm["MemoryStore"](MEMORY, pid)
@@ -154,10 +152,30 @@ def tool_pedir_contexto(args: dict) -> str:
     if not records:
         avisos.append(f"El proyecto '{pid}' no tiene memoria todavia.")
 
-    # Analisis de intencion con el modelo local. Degrada con elegancia: si el
-    # modelo (Ollama) no esta, se sigue con solapamiento lexico.
+    # El modo configurado decide que piezas de IA local se usan (DEC-032).
+    # Aqui importa mas que en la CLI: el IDE lanza este servidor y no puede
+    # pasarle banderas, asi que sin el ajuste persistente la extension
+    # intentaria siempre usar el modelo generativo.
+    from acm.settings import MODOS, ollama_disponible, resolve as resolve_modo
+
+    pedido = str(args.get("modo") or "").strip().lower()
+    modo = MODOS.get(pedido) or resolve_modo(HOME, pid)
+
+    # Las banderas sueltas siguen funcionando y restringen sobre el modo.
+    solo_lexico = bool(args.get("solo_lexico", False))
+    usar_modelo = bool(args.get("usar_modelo", True))
+    usa_intencion = modo.usa_intencion and usar_modelo and not solo_lexico
+    usa_embeddings = modo.usa_embeddings and not solo_lexico
+
+    if (usa_intencion or usa_embeddings) and not ollama_disponible(HOME):
+        avisos.append(
+            f"Ollama no responde: respondo solo con solapamiento lexico "
+            f"(modo configurado: {modo.nombre})."
+        )
+        usa_intencion = usa_embeddings = False
+
     intent = None
-    if usar_modelo and not solo_lexico:
+    if usa_intencion:
         try:
             from acm.intent import analyze
             intent = analyze(query, records)
@@ -170,7 +188,7 @@ def tool_pedir_contexto(args: dict) -> str:
         from acm.intent import Intent
         intent = Intent(intent="(sin analisis)")
 
-    index = None if solo_lexico else acm["load_index"](MEMORY, pid)
+    index = acm["load_index"](MEMORY, pid) if usa_embeddings else None
     if index is None:
         hits = acm["retrieve"](
             records, query,

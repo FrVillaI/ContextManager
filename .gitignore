@@ -35,3 +35,8 @@ tests/test_retrieval_piloto.py
 # Notas de diseno en bruto: conversaciones de trabajo con referencias al
 # proyecto piloto.
 docs/notas/
+
+# Preferencia de modo de IA local y salud recordada de Ollama: estado de la
+# maquina, no del proyecto. El modo por defecto vive en el codigo (ahorro).
+config.json
+.ollama_health

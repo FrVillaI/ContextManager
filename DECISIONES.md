@@ -1743,3 +1743,74 @@ La activación en el proyecto piloto la decide el usuario:
 ```
 python context_manager.py hook install --project piloto
 ```
+
+---
+
+## DEC-032 — Tres modos de IA local, no un interruptor
+
+- **Estado:** ACEPTADA
+- **Fecha:** 2026-09-26
+- **Decidido por:** el usuario
+- **Origen:** primera decisión posterior a la congelación de DEC-031, motivada por una necesidad de uso
+  real (ahorrar recursos) y no por un problema teórico
+
+### Contexto
+Al integrar el servidor MCP surgió la necesidad de poder apagar la IA local para ahorrar recursos. La
+petición inicial era un interruptor de encendido y apagado.
+
+### Por qué un interruptor binario era la forma equivocada
+La «IA local» son **dos piezas con relación coste-beneficio opuesta**:
+
+| Pieza | Coste | Beneficio medido |
+|---|---|---|
+| `llama3.2:3b` (intención) | 4–10 s por consulta, ~2 GB residentes | solo reordena: DEC-015 le quitó el poder de admitir candidatos por ser demasiado grueso |
+| `nomic-embed-text` | ~0,3 s, ~300 MB, índice ya calculado | recall de sinónimos ×2, nDCG ×3,6 |
+
+**El modelo caro es el que menos aporta.** Un interruptor único obliga a tirar los dos juntos.
+
+### Decisión
+Tres modos, con el intermedio por defecto:
+
+```
+completo   intención + embeddings      máxima calidad, máximo coste
+ahorro     solo embeddings             ← por defecto
+minimo     solo léxico                 no necesita Ollama en absoluto
+```
+
+**Alcance:** ajuste global con anulación por proyecto. Precedencia:
+`ACM_MODO` (entorno) → anulación del proyecto → global → `ahorro`.
+
+### Por qué persistente y no banderas
+El servidor MCP **no puede recibir banderas**: lo lanza el IDE. Sin un ajuste en disco, la extensión
+intentaría siempre usar el modelo generativo aunque no se quisiera. Las banderas antiguas
+(`--no-llm`, `--lexico`) siguen funcionando y restringen sobre el modo, para no romper guiones ya
+escritos.
+
+### Tres detalles que hacen que el ahorro sea real
+1. **Salud recordada.** Sin ella, cada invocación de la CLI paga el intento de conexión. Con el
+   servicio parado el fallo es inmediato, pero con uno colgado se espera el tiempo completo cada vez.
+   Se recuerda 30 s en disco, porque un proceso de CLI vive un instante.
+2. **Descarga explícita.** Dejar de llamar al modelo no lo baja: Ollama lo mantiene cargado unos
+   minutos. `ia descargar` lo libera de verdad con `keep_alive: 0`.
+3. **El modo viaja en la respuesta.** Un modo reducido devuelve menos, y callarlo sería devolver menos
+   en silencio. El bloque de contexto del MCP empieza declarando con qué modo se construyó.
+
+### Hallazgo colateral, y probablemente el mayor ahorro
+Ninguna pieza del flujo diario usa el grafo:
+
+```
+ask.py · learn.py · context_manager.py · mcp_server.py  →  0 referencias a FalkorDB
+```
+
+Solo lo usan `graph.py` y su prueba de humo. La recuperación lee JSONL y `.vectors.json`
+directamente. **Los 4 GB que WSL2 reserva para Docker no sirven para nada en el uso normal**, y
+apagarlo ahorra más que cualquiera de estos modos sin escribir una línea de código.
+
+### Interfaz
+```
+python context_manager.py ia estado      [--project P]
+python context_manager.py ia ahorro      [--project P]
+python context_manager.py ia completo | minimo
+python context_manager.py ia reiniciar   --project P    (quita la anulación)
+python context_manager.py ia descargar                  (libera la RAM de Ollama)
+```

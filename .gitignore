@@ -40,3 +40,7 @@ docs/notas/
 # maquina, no del proyecto. El modo por defecto vive en el codigo (ahorro).
 config.json
 .ollama_health
+
+# Configuracion MCP del editor: contiene rutas absolutas de la maquina.
+# La plantilla portable vive en integrations/vscode/mcp.json
+.vscode/mcp.json
